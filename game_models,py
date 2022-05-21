@@ -1,64 +1,127 @@
 import pygame
-import game_ship
+from game_models import *
+import sys
 
-# ship - корабль и огонь
-class Ship(pygame.sprite.Sprite):
-    global window_width
-    global window_height
-    global ship_check
-    global now
-    global now_green
+
+class Game(pygame.sprite.Sprite):
+    pygame.init()
+
+    # для проверок
+
+
+    # подсчет
+    asteroid_check = 0
+
+
+    window_width = 1100
+    window_height = 600
+    background = pygame.transform.scale(pygame.image.load('image/bg.jpg'), (window_width, window_height))
+    window = pygame.display.set_mode((window_width, window_height))
+
+    ship = Ship(window_width, window_height)
+
+    asteroid = Asteroid(window_width, window_height)
+
+    # текст
+    font = pygame.font.Font(None, 40)
+    text_text = 'осторожно! астероиды рядом! Твой счет: {}'.format(asteroid_check)
+    text = font.render(text_text, True, [240, 160, 75])
+    text_position = 15, 10
+
+    bullets = pygame.sprite.Group()
+    bullets_green = pygame.sprite.Group()
+    asteroids = pygame.sprite.Group()
+    asteroids.add(asteroid)
+
+    # fps
+    clock = pygame.time.Clock()
+    FPS = 60
 
     def __init__(self):
-        pygame.sprite.Sprite.__init__(self)
-        self.image = pygame.transform.scale(pygame.image.load('image/ship.png'), (250, 250))
-        self.image.set_colorkey('WHITE')
-        self.rect = self.image.get_rect()
-        self.rect.x = window_width / 2 - 180
-        self.rect.y = window_height - window_height / 2
-        self.speed = 5
+        self.menu()
 
-        self.last = pygame.time.get_ticks()
-        self.last_green = pygame.time.get_ticks()
-        self.cooldown = 500
-        self.green_cooldown = self.cooldown / 4
+    def menu(self):
+        back_color = 15, 60, 40
 
-    def check(self):
-        if ship_check:
-            pygame.sprite.Sprite.__init__(self)
-            self.image = pygame.transform.scale(pygame.image.load('image/ship.png'), (250, 250))
-            self.image.set_colorkey('WHITE')
-        else:
-            pygame.sprite.Sprite.__init__(self)
-            self.image = pygame.transform.scale(pygame.image.load('image/boom.png'), (250, 250))
-            self.image.set_colorkey('WHITE')
+        font_m = pygame.font.Font(None, 40)
+        text_text_m = 'привет! астероиды рядом! Нажми пробел чтобы защищаться!'
+        text_m = font_m.render(text_text_m, True, [100, 149, 237])
+        text_position_m = self.window_height / 6, 50
+        while True:
+            events = pygame.event.get()
+            for event in events:
+                if event.type == pygame.QUIT:
+                    self.exit_game()
+                if event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_SPACE:
+                        self.game_start()
 
-    # def fire(self):
-    #     if now - self.last >= self.cooldown:
-    #         self.last = now
-    #         bullet = Gun()
-    #         bullets.add(bullet)
-    #     if now_green - self.last_green >= self.green_cooldown:
-    #         bullet_green = GreenGun()
-    #         bullets_green.add(bullet_green)
-    #         self.last_green = now_green
-    #
-    #         bullet_green_2 = GreenGun()
-    #         bullet_green_2.rect.x += 195
-    #         bullets_green.add(bullet_green_2)
+                    self.window.fill(back_color)
+                    self.window.blit(text_m, text_position_m)
+                    pygame.display.update()
 
-    def update(self):
-        keys = pygame.key.get_pressed()
-        if ship_check:
-            if keys[pygame.K_a]:
-                if self.rect.x > 0 and ship_check == True:
-                    self.rect.x -= self.speed
-            elif keys[pygame.K_d]:
-                if self.rect.x < window_width - 250 and ship_check == True:
-                    self.rect.x += self.speed
-            if keys[pygame.K_w]:
-                if self.rect.y > -10 and ship_check == True:
-                    self.rect.y -= self.speed
-            elif keys[pygame.K_s]:
-                if self.rect.y < window_height - 250 and ship_check == True:
-                    self.rect.y += self.speed
+    def check_collision(self):
+        global ship_check
+        asteroid_collide = pygame.sprite.spritecollide(self.ship, self.asteroids, False)
+        for i in asteroid_collide:
+            text_text = 'О нет! Ты врезался! Корабль сломан! Твой счет до смерти: {}'.format(self.asteroid_check)
+            self.text = self.font.render(text_text, True, [240, 160, 75])
+            ship_check = False
+            self.ship.check()
+            self.asteroid.kill()
+
+        # пули и астероиды
+        bullets_asteroids = pygame.sprite.groupcollide(self.bullets, self.asteroids, True, False)
+        for i in bullets_asteroids:
+            i.kill()
+            bullets_asteroids[i][0].kill()
+            self.asteroid.spawn_asteroid(self.asteroids)
+
+            self.asteroid_check += 1
+            text_text = 'осторожно! астероиды рядом! Твой счет: {}'.format(self.asteroid_check)
+            self.text = self.font.render(text_text, True, [240, 160, 75])
+
+        bullets_asteroids = pygame.sprite.groupcollide(self.bullets_green, self.asteroids, True, False)
+        for i in bullets_asteroids:
+            i.kill()
+            bullets_asteroids[i][0].kill()
+            self.asteroid.spawn_asteroid(self.asteroids)
+
+            self.asteroid_check += 1
+            text_text = 'осторожно! астероиды рядом! Твой счет: {}'.format(self.asteroid_check)
+            self.text = self.font.render(text_text, True, [240, 160, 75])
+
+    def game_start(self):
+        while True:
+            events = pygame.event.get()
+            for event in events:
+                if event.type == pygame.QUIT:
+                    self.exit_game()
+                if event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_SPACE:
+                        self.ship.fire(self.bullets, self.bullets_green)
+
+            self.check_collision()
+
+            self.ship.update()
+            self.bullets.update()
+            self.bullets_green.update()
+            self.asteroids.update(self.asteroid)
+
+            self.window.blit(self.background, (0, 0))
+            self.bullets.draw(self.window)
+            self.bullets_green.draw(self.window)
+            self.asteroids.draw(self.window)
+            self.window.blit(self.text, self.text_position)
+            self.window.blit(self.ship.image, (self.ship.rect.x, self.ship.rect.y))
+
+            self.clock.tick(self.FPS)
+            pygame.display.update()
+
+    def exit_game(self):
+        pygame.quit()
+        sys.exit()
+
+
+game = Game()
+game.menu()
