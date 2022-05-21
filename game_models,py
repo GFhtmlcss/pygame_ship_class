@@ -1,127 +1,134 @@
 import pygame
-from game_models import *
-import sys
+from random import randint
 
 
-class Game(pygame.sprite.Sprite):
-    pygame.init()
+# ship - корабль и огонь
+class Ship(pygame.sprite.Sprite):
+    def __init__(self, window_width, window_height):
+        pygame.sprite.Sprite.__init__(self)
+        self.image = pygame.transform.scale(pygame.image.load('image/ship.png'), (250, 250))
+        self.image.set_colorkey('WHITE')
+        self.rect = self.image.get_rect()
+        self.rect.x = window_width / 2 - 180
+        self.rect.y = window_height - window_height / 2
+        self.speed = 5
+        self.window_width = window_width
+        self.window_height = window_height
 
-    # для проверок
+        self.last = pygame.time.get_ticks()
+        self.last_green = pygame.time.get_ticks()
+        self.cooldown = 500
+        self.green_cooldown = self.cooldown / 4
 
+        self.ship_check = True
 
-    # подсчет
-    asteroid_check = 0
+    def check(self):
+        if self.ship_check:
+            pygame.sprite.Sprite.__init__(self)
+            self.image = pygame.transform.scale(pygame.image.load('image/ship.png'), (250, 250))
+            self.image.set_colorkey('WHITE')
+        else:
+            pygame.sprite.Sprite.__init__(self)
+            self.image = pygame.transform.scale(pygame.image.load('image/boom.png'), (250, 250))
+            self.image.set_colorkey('WHITE')
 
+    def fire(self, bullets, bullets_green):
+        self.now = pygame.time.get_ticks()
+        self.now_green = pygame.time.get_ticks()
+        if self.now - self.last >= self.cooldown:
+            self.last = self.now
+            bullet = Gun(self)
+            bullets.add(bullet)
+        if self.now_green - self.last_green >= self.green_cooldown:
+            bullet_green = GreenGun(self)
+            bullets_green.add(bullet_green)
+            self.last_green = self.now_green
 
-    window_width = 1100
-    window_height = 600
-    background = pygame.transform.scale(pygame.image.load('image/bg.jpg'), (window_width, window_height))
-    window = pygame.display.set_mode((window_width, window_height))
+            bullet_green_2 = GreenGun(self)
+            bullet_green_2.rect.x += 195
+            bullets_green.add(bullet_green_2)
 
-    ship = Ship(window_width, window_height)
-
-    asteroid = Asteroid(window_width, window_height)
-
-    # текст
-    font = pygame.font.Font(None, 40)
-    text_text = 'осторожно! астероиды рядом! Твой счет: {}'.format(asteroid_check)
-    text = font.render(text_text, True, [240, 160, 75])
-    text_position = 15, 10
-
-    bullets = pygame.sprite.Group()
-    bullets_green = pygame.sprite.Group()
-    asteroids = pygame.sprite.Group()
-    asteroids.add(asteroid)
-
-    # fps
-    clock = pygame.time.Clock()
-    FPS = 60
-
-    def __init__(self):
-        self.menu()
-
-    def menu(self):
-        back_color = 15, 60, 40
-
-        font_m = pygame.font.Font(None, 40)
-        text_text_m = 'привет! астероиды рядом! Нажми пробел чтобы защищаться!'
-        text_m = font_m.render(text_text_m, True, [100, 149, 237])
-        text_position_m = self.window_height / 6, 50
-        while True:
-            events = pygame.event.get()
-            for event in events:
-                if event.type == pygame.QUIT:
-                    self.exit_game()
-                if event.type == pygame.KEYDOWN:
-                    if event.key == pygame.K_SPACE:
-                        self.game_start()
-
-                    self.window.fill(back_color)
-                    self.window.blit(text_m, text_position_m)
-                    pygame.display.update()
-
-    def check_collision(self):
-        global ship_check
-        asteroid_collide = pygame.sprite.spritecollide(self.ship, self.asteroids, False)
-        for i in asteroid_collide:
-            text_text = 'О нет! Ты врезался! Корабль сломан! Твой счет до смерти: {}'.format(self.asteroid_check)
-            self.text = self.font.render(text_text, True, [240, 160, 75])
-            ship_check = False
-            self.ship.check()
-            self.asteroid.kill()
-
-        # пули и астероиды
-        bullets_asteroids = pygame.sprite.groupcollide(self.bullets, self.asteroids, True, False)
-        for i in bullets_asteroids:
-            i.kill()
-            bullets_asteroids[i][0].kill()
-            self.asteroid.spawn_asteroid(self.asteroids)
-
-            self.asteroid_check += 1
-            text_text = 'осторожно! астероиды рядом! Твой счет: {}'.format(self.asteroid_check)
-            self.text = self.font.render(text_text, True, [240, 160, 75])
-
-        bullets_asteroids = pygame.sprite.groupcollide(self.bullets_green, self.asteroids, True, False)
-        for i in bullets_asteroids:
-            i.kill()
-            bullets_asteroids[i][0].kill()
-            self.asteroid.spawn_asteroid(self.asteroids)
-
-            self.asteroid_check += 1
-            text_text = 'осторожно! астероиды рядом! Твой счет: {}'.format(self.asteroid_check)
-            self.text = self.font.render(text_text, True, [240, 160, 75])
-
-    def game_start(self):
-        while True:
-            events = pygame.event.get()
-            for event in events:
-                if event.type == pygame.QUIT:
-                    self.exit_game()
-                if event.type == pygame.KEYDOWN:
-                    if event.key == pygame.K_SPACE:
-                        self.ship.fire(self.bullets, self.bullets_green)
-
-            self.check_collision()
-
-            self.ship.update()
-            self.bullets.update()
-            self.bullets_green.update()
-            self.asteroids.update(self.asteroid)
-
-            self.window.blit(self.background, (0, 0))
-            self.bullets.draw(self.window)
-            self.bullets_green.draw(self.window)
-            self.asteroids.draw(self.window)
-            self.window.blit(self.text, self.text_position)
-            self.window.blit(self.ship.image, (self.ship.rect.x, self.ship.rect.y))
-
-            self.clock.tick(self.FPS)
-            pygame.display.update()
-
-    def exit_game(self):
-        pygame.quit()
-        sys.exit()
+    def update(self):
+        keys = pygame.key.get_pressed()
+        if self.ship_check:
+            if keys[pygame.K_a]:
+                if self.rect.x > 0 and self.ship_check == True:
+                    self.rect.x -= self.speed
+            elif keys[pygame.K_d]:
+                if self.rect.x < self.window_width - 250 and self.ship_check == True:
+                    self.rect.x += self.speed
+            if keys[pygame.K_w]:
+                if self.rect.y > -10 and self.ship_check == True:
+                    self.rect.y -= self.speed
+            elif keys[pygame.K_s]:
+                if self.rect.y < self.window_height - 250 and self.ship_check == True:
+                    self.rect.y += self.speed
 
 
-game = Game()
-game.menu()
+# оружие
+class Gun(pygame.sprite.Sprite):
+    def __init__(self, ship):
+        pygame.sprite.Sprite.__init__(self)
+        self.image = pygame.transform.scale(pygame.image.load('image/snaryad.png'), (30, 50))
+        self.image.set_colorkey('WHITE')
+        self.rect = self.image.get_rect()
+        self.rect.x = ship.rect.x + 112
+        self.rect.y = ship.rect.y
+        self.speed = 15
+
+    def update(self):
+        self.rect.y -= self.speed
+        if self.rect.y < -50:
+            self.kill()
+
+
+# вторичное оружие
+class GreenGun(pygame.sprite.Sprite):
+    def __init__(self, ship):
+        pygame.sprite.Sprite.__init__(self)
+        self.image = pygame.transform.scale(pygame.image.load('image/greengun.png'), (15, 30))
+        self.image.set_colorkey('WHITE')
+        self.rect = self.image.get_rect()
+        self.rect.x = ship.rect.x + 20
+        self.rect.y = ship.rect.y
+        self.speed = 25
+
+    def update(self):
+        self.rect.y -= self.speed
+        if self.rect.y < -50:
+            self.kill()
+
+
+#астероиды small
+class Asteroid(pygame.sprite.Sprite):
+    def __init__(self, window_width, window_height):
+        pygame.sprite.Sprite.__init__(self)
+        self.change_view('image/asteroid_small.png', 'WHITE', 64, 64)
+        self.rotate_image = self.image
+        self.window_width = window_width
+        self.window_height = window_height
+        self.rect = self.image.get_rect()
+        self.rect.x = randint(0 + 150, self.window_width - 150)
+        self.rect.y = 0
+        self.speed = 2
+        self.angle = 0
+
+    def spawn_asteroid(self, asteroids):
+        self.asteroid = Asteroid(self.window_width, self.window_height)
+        self.rect.x = randint(0 + 150, self.window_width - 150)
+        self.rect.y = 0
+        asteroids.add(self.asteroid)
+
+    def change_view(self, image, color, xscale=10, yscale=10):
+        self.image = pygame.transform.scale(pygame.image.load(image), (xscale, yscale))
+        self.image.set_colorkey(color)
+
+    def update(self, asteroid_check):
+        self.rect.y += self.speed
+        self.image = pygame.transform.rotate(self.rotate_image, self.angle)
+        self.image.set_colorkey('WHITE')
+        self.angle += 1
+        if self.rect.y > self.window_height:
+            self.kill()
+        if not asteroid_check:
+            self.spawn_asteroid()
