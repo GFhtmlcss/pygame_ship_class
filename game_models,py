@@ -101,7 +101,7 @@ class GreenGun(pygame.sprite.Sprite):
 
 #астероиды small
 class Asteroid(pygame.sprite.Sprite):
-    def __init__(self, window_width, window_height):
+    def __init__(self, window_width, window_height, asteroid_group):
         pygame.sprite.Sprite.__init__(self)
         self.change_view('image/asteroid_small.png', 'WHITE', 64, 64)
         self.rotate_image = self.image
@@ -112,12 +112,13 @@ class Asteroid(pygame.sprite.Sprite):
         self.rect.y = 0
         self.speed = 2
         self.angle = 0
+        self.asteroid_group = asteroid_group
 
-    def spawn_asteroid(self, asteroids):
-        self.asteroid = Asteroid(self.window_width, self.window_height)
+    def spawn_asteroid(self):
+        self.asteroid = Asteroid(self.window_width, self.window_height, self.asteroid_group)
         self.rect.x = randint(0 + 150, self.window_width - 150)
         self.rect.y = 0
-        asteroids.add(self.asteroid)
+        self.asteroid_group.add(self.asteroid)
 
     def change_view(self, image, color, xscale=10, yscale=10):
         self.image = pygame.transform.scale(pygame.image.load(image), (xscale, yscale))
@@ -129,6 +130,17 @@ class Asteroid(pygame.sprite.Sprite):
         self.image.set_colorkey('WHITE')
         self.angle += 1
         if self.rect.y > self.window_height:
+            self.spawn_asteroid()
             self.kill()
         if not asteroid_check:
             self.spawn_asteroid()
+
+class Icon(pygame.sprite.Sprite):
+    def __init__(self, x, y):
+        pygame.sprite.Sprite.__init__(self)
+        self.scale = 258 * 1.5
+        self.image = pygame.transform.scale(pygame.image.load('image/boom_icon.png'), (self.scale, self.scale))
+        self.image.set_colorkey('WHITE')
+        self.rect = self.image.get_rect()
+        self.rect.x = x
+        self.rect.y = y
