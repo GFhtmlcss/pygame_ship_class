@@ -9,6 +9,7 @@ import time
 # 3. астероид-босс
 # 4. анимации
 # 5. очки здоровья
+# 6. dыбор скинов
 
 
 
@@ -17,6 +18,8 @@ class Game:
     pygame.display.set_caption('ЗАЩИТНИК ОТ АСТЕРОИДОВ')
 
     sound_check = 'вкл'
+    boss_check = False
+    boss_balls = 0
 
     def __init__(self):
         self.menu()
@@ -55,6 +58,7 @@ class Game:
             self.asteroid.spawn_asteroid()
 
             self.asteroid_check += 1
+            self.boss_balls += 1
             text_text = 'осторожно! астероиды рядом! Твой счет: {}'.format(self.asteroid_check)
             self.text = self.font.render(text_text, True, [240, 160, 75])
 
@@ -66,13 +70,15 @@ class Game:
             self.asteroid.spawn_asteroid()
 
             self.asteroid_check += 1
+            self.boss_balls += 1
             text_text = 'осторожно! астероиды рядом! Твой счет: {}'.format(self.asteroid_check)
             self.text = self.font.render(text_text, True, [240, 160, 75])
 
     def menu(self):
         self.setup_game()
 
-        back_color = 91, 38, 128
+        self.background_menu_not = pygame.image.load('image/bg_menu.jpg')
+        self.background_menu = pygame.transform.scale(self.background_menu_not, (self.window_width, self.window_height))
         text_color = [255, 255, 64]
 
         font_m = pygame.font.Font(None, 40)
@@ -98,14 +104,15 @@ class Game:
                     if event.key == pygame.K_o:
                         self.option_menu()
 
-            self.window.fill(back_color)
+            self.window.blit(self.background_menu, (0, 0))
             self.window.blit(text_m, text_position_m)
             self.window.blit(text_o, text_position_o)
             self.window.blit(icon.image, (0, self.window_height - icon.scale))
             pygame.display.update()
 
     def option_menu(self):
-        fill_color = 31, 125, 99
+        self.background_opt_not = pygame.image.load('image/bg_option.jpg')
+        self.background_opt = pygame.transform.scale(self.background_opt_not, (self.window_width, self.window_height))
         text_color = [102, 226, 117]
 
         font_m = pygame.font.Font(None, 40)
@@ -135,7 +142,7 @@ class Game:
                         sound_text = 'Нажми s, чтобы вкл/выкл звуки в игре. Сейчас звук {}'.format(self.sound_check)
                         s_text = font_m.render(sound_text, True, text_color)
 
-            self.window.fill(fill_color)
+            self.window.blit(self.background_opt, (0, 0))
             self.window.blit(o_text, text_position_o)
             self.window.blit(s_text, s_position)
             pygame.display.update()
@@ -151,6 +158,7 @@ class Game:
         self.window = pygame.display.set_mode((self.window_width, self.window_height))
 
         self.ship = Ship(self.window_width, self.window_height)
+        self.boss = Boss(self.window_width, self.window_height)
 
         # текст
         self.font = pygame.font.Font(None, 40)
@@ -167,6 +175,9 @@ class Game:
 
         self.asteroids.add(self.asteroid)
 
+        boss_check = False
+        boss_balls = 0
+
         # fps
         self.clock = pygame.time.Clock()
         self.FPS = 60
@@ -180,6 +191,11 @@ class Game:
                 if event.type == pygame.KEYDOWN:
                     if event.key == pygame.K_SPACE:
                         self.ship.fire(self.bullets, self.bullets_green)
+            if self.boss_balls >= 1:
+                print("it's time for BOSS")
+                self.boss_check = True
+                self.boss_balls = 0
+                self.boss.spawn_asteroid(self.asteroids, self.window_width, self.window_height)
 
             self.check_collision()
 
