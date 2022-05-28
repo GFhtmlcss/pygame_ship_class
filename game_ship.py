@@ -4,12 +4,13 @@ import sys
 import time
 
 # TODO
-# 1. надписи в меню
+# 1. надписи в меню ВЫПОЛНЕНО
 # 2. звуки
-# 3. астероид-босс
+# 3. астероид-босс (осталось только хп)
 # 4. анимации
-# 5. очки здоровья
-# 6. dыбор скинов
+# 6. выбор скинов
+# 7. выбор сложности
+# (легко - 15 очков для босса, очки * 1; средний - 10 очков для босса, очки * 1,5; сложный -4 очка для босса, очки * 2
 
 
 
@@ -191,7 +192,7 @@ class Game:
                 if event.type == pygame.KEYDOWN:
                     if event.key == pygame.K_SPACE:
                         self.ship.fire(self.bullets, self.bullets_green)
-            if self.boss_balls >= 1:
+            if self.boss_balls >= 10:
                 print("it's time for BOSS")
                 self.boss_check = True
                 self.boss_balls = 0
@@ -203,6 +204,7 @@ class Game:
             self.bullets.update()
             self.bullets_green.update()
             self.asteroids.update(self.asteroid)
+            self.boss.update(self.window_height)
 
             self.window.blit(self.background, (0, 0))
             self.bullets.draw(self.window)
